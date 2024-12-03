@@ -8,39 +8,45 @@ import Unillanos.AsistenciaMonitor.Repository.MonitorRepository;
 import Unillanos.AsistenciaMonitor.Repository.SemestreRepository;
 import Unillanos.AsistenciaMonitor.Repository.UsuarioRepository;
 import Unillanos.AsistenciaMonitor.Repository.RolRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Random;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.time.LocalDateTime;
 
 @Service
 public class MonitorService {
-    @Autowired
-    private MonitorRepository monitorRepository;
+    private final MonitorRepository monitorRepository;
+    private final RolRepository rolRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final SemestreRepository semestreRepository;
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private SemestreRepository semestreRepository;
-
-    @Autowired
-    private RolRepository rolRepository;
+    public MonitorService(MonitorRepository monitorRepository, RolRepository rolRepository,
+                          UsuarioRepository usuarioRepository, SemestreRepository semestreRepository) {
+        this.monitorRepository = monitorRepository;
+        this.rolRepository = rolRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.semestreRepository = semestreRepository;
+    }
 
     // Crear monitor
     public Monitor crearMonitor(String nombre, String apellido, String diasAsignados, Integer totalHoras,
-                                String correo, String codigoEstudiantil, String telefono, String genero, Long semestreId) {
+                                String correo, String genero, Long semestreId) {
 
         // Obtener el rol de "Monitor"
         Rol rolMonitor = rolRepository.findByNombre("Monitor")
                 .orElseThrow(() -> new RuntimeException("Rol 'Monitor' no encontrado"));
+
+        // Generar código único
+        Integer codigoUnico = generarCodigoUnico();
 
         // Crear y guardar el usuario
         Usuario usuario = new Usuario();
         usuario.setNombre(nombre);
         usuario.setApellido(apellido);
         usuario.setCorreo(correo);
+        usuario.setGenero(genero);
         usuario.setRol(rolMonitor);
+        usuario.setCodigo(codigoUnico);
         usuario.setFechaCreacion(LocalDateTime.now());
         usuarioRepository.save(usuario);
 
@@ -48,14 +54,27 @@ public class MonitorService {
         Semestre semestre = semestreRepository.findById(semestreId)
                 .orElseThrow(() -> new RuntimeException("Semestre no encontrado"));
 
+
         // Crear y guardar el monitor
         Monitor monitor = new Monitor();
         monitor.setUsuario(usuario);
-        monitor.setGenero(genero);
         monitor.setSemestre(semestre);
         monitor.setTotalHoras(totalHoras);
         monitor.setDiasAsignados(diasAsignados);
         return monitorRepository.save(monitor);
+    }
+
+    private Integer generarCodigoUnico() {
+        Random random = new Random();
+        Integer codigo;
+        boolean existe;
+
+        do {
+            codigo = 1000 + random.nextInt(9000); // Genera un número entre 1000 y 9999
+            existe = usuarioRepository.existsByCodigo(codigo);
+        } while (existe);
+
+        return codigo;
     }
 
     // Listar todos los monitores

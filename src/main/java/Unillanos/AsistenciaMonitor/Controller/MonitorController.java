@@ -26,8 +26,6 @@ public class MonitorController {
                 (String) payload.get("dias_asignados"),
                 (Integer) payload.get("total_horas"),
                 (String) payload.get("correo"),
-                (String) payload.get("codigo_estudiantil"),
-                (String) payload.get("telefono"),
                 (String) payload.get("genero"),
                 Long.valueOf((Integer) payload.get("semestre"))
         );

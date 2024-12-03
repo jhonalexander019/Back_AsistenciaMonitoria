@@ -19,9 +19,6 @@ public class Monitor {
     @Schema(description = "Semestre del monitor", example = "5")
     private Semestre semestre;
 
-    @Schema(description = "Genero del monitor", example = "Masculino | Femenino")
-    private String genero;
-
     @Schema(description = "Horas asignadas en el semestre al monitor", example = "150")
     private Integer totalHoras;
 
@@ -42,14 +39,6 @@ public class Monitor {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
-    }
-
-    public String getGenero() {
-        return genero;
-    }
-
-    public void setGenero(String genero) {
-        this.genero = genero;
     }
 
     public Semestre getSemestre() {
