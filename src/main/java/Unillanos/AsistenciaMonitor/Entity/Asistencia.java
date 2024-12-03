@@ -1,23 +1,26 @@
 package Unillanos.AsistenciaMonitor.Entity;
 
 import jakarta.persistence.*;
-
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 @Entity
+@Schema(description = "Entidad que representa la asistencia de un monitor en un día específico")
 public class Asistencia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "ID único de la asistencia", example = "1")
     private Long id;
 
     @ManyToOne
+    @Schema(description = "Monitor relacionado con esta asistencia")
     private Monitor monitor;
 
-    @ManyToOne
-    private Semestre semestre;
-
+    @Schema(description = "Fecha de la asistencia", example = "2024-12-01")
     private LocalDate fecha;
+    @Schema(description = "Estado de la asistencia", example = "Presente | Ausente")
     private String estado;
+    @Schema(description = "Horas cubiertas en este día", example = "4")
     private Integer horasCubiertas;
 
     public Long getId() {
@@ -34,14 +37,6 @@ public class Asistencia {
 
     public void setMonitor(Monitor monitor) {
         this.monitor = monitor;
-    }
-
-    public Semestre getSemestre() {
-        return semestre;
-    }
-
-    public void setSemestre(Semestre semestre) {
-        this.semestre = semestre;
     }
 
     public LocalDate getFecha() {
