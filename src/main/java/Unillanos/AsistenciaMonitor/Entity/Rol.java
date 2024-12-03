@@ -14,6 +14,14 @@ public class Rol {
     @Schema(description = "Nombre del rol", example = "Monitor")
     private String nombre;
 
+    // Constructor sin argumentos
+    public Rol() {
+    }
+
+    // Constructor con argumento para inicializar nombre
+    public Rol(String nombre) {
+        this.nombre = nombre;
+    }
     // Getters y setters
     public Long getId() {
         return id;

@@ -2,6 +2,7 @@ package Unillanos.AsistenciaMonitor.Controller;
 
 import Unillanos.AsistenciaMonitor.Entity.Semestre;
 import Unillanos.AsistenciaMonitor.Service.SemestreService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/semestres")
+@Tag(name = "Semestres", description = "Endpoints para la gestión de los semestres")
 public class SemestreController {
     @Autowired
     private SemestreService semestreService;
