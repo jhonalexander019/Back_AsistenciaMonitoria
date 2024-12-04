@@ -22,7 +22,6 @@ public class AsistenciaController {
     public ResponseEntity<Asistencia> registrarAsistencia(@RequestBody Map<String, Object> payload) {
         Asistencia asistencia = asistenciaService.registrarAsistencia(
                 Long.valueOf((Integer) payload.get("monitor_id")),
-                LocalDate.parse((String) payload.get("fecha")),
                 (String) payload.get("estado"),
                 (Integer) payload.get("horas_trabajadas")
         );

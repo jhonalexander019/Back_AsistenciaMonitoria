@@ -8,10 +8,15 @@ import Unillanos.AsistenciaMonitor.Repository.MonitorRepository;
 import Unillanos.AsistenciaMonitor.Repository.SemestreRepository;
 import Unillanos.AsistenciaMonitor.Repository.UsuarioRepository;
 import Unillanos.AsistenciaMonitor.Repository.RolRepository;
+
+import java.util.HashMap;
 import java.util.Random;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @Service
 public class MonitorService {
@@ -82,17 +87,6 @@ public class MonitorService {
         return monitorRepository.findAll();
     }
 
-    // Listar monitores por un día específico en su horario
-    public List<Monitor> listarMonitoresPorDia(String dia) {
-        return monitorRepository.findByDiasAsignadosContaining(dia);
-    }
-
-    // Obtener monitor por ID
-    public Monitor obtenerMonitorPorId(Long id) {
-        return monitorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Monitor no encontrado con ID: " + id));
-    }
-
     // Eliminar un monitor por su ID
     public void eliminarMonitor(Long id) {
         Monitor monitor = monitorRepository.findById(id)
@@ -100,4 +94,56 @@ public class MonitorService {
 
         monitorRepository.delete(monitor);
     }
+
+    // Listar monitores por un día específico en su horario
+    public Map<String, List<Map<String, String>>> listarMonitoresPorHorario(String dia) {
+        if (dia == null || dia.trim().isEmpty()) {
+            throw new IllegalArgumentException("El día proporcionado no es válido.");
+        }
+
+        List<Monitor> monitores = monitorRepository.findByDiasAsignadosContaining(dia);
+
+        if (monitores.isEmpty()) {
+            throw new RuntimeException("No hay monitores asignados para el día: " + dia);
+        }
+
+        // Filtrar monitores según la mañana y la tarde
+        List<Map<String, String>> monitoresManana = monitores.stream()
+                .filter(m -> m.getDiasAsignados().contains(dia + "Mañana"))
+                .map(m -> Map.of("nombre", m.getUsuario().getNombre(), "apellido", m.getUsuario().getApellido()))
+                .collect(Collectors.toList());
+
+        List<Map<String, String>> monitoresTarde = monitores.stream()
+                .filter(m -> m.getDiasAsignados().contains(dia + "Tarde"))
+                .map(m -> Map.of("nombre", m.getUsuario().getNombre(), "apellido", m.getUsuario().getApellido()))
+                .collect(Collectors.toList());
+
+        // Crear el mapa de respuesta
+        Map<String, List<Map<String, String>>> resultado = new HashMap<>();
+        resultado.put("Mañana", monitoresManana);
+        resultado.put("Tarde", monitoresTarde);
+
+        return resultado;
+    }
+
+    // Perfil del monitor
+    public Map<String, Object> obtenerPerfilMonitor(Long id) {
+        Monitor monitor = monitorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Monitor no encontrado con ID: " + id));
+
+        // Construir el perfil con la información principal
+        Map<String, Object> perfil = new HashMap<>();
+        perfil.put("id", monitor.getId());
+        perfil.put("nombre", monitor.getUsuario().getNombre());
+        perfil.put("apellido", monitor.getUsuario().getApellido());
+        perfil.put("correo", monitor.getUsuario().getCorreo());
+        perfil.put("genero", monitor.getUsuario().getGenero());
+        perfil.put("semestre", monitor.getSemestre().getNombre());
+        perfil.put("totalHoras", monitor.getTotalHoras());
+        perfil.put("codigo", monitor.getUsuario().getCodigo());
+
+        return perfil;
+    }
+
+
 }

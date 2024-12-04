@@ -1,8 +1,10 @@
 package Unillanos.AsistenciaMonitor.Entity;
 
-import jakarta.persistence.*;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Schema(description = "Entidad que representa la asistencia de un monitor en un día específico")
@@ -17,7 +19,7 @@ public class Asistencia {
     private Monitor monitor;
 
     @Schema(description = "Fecha de la asistencia", example = "2024-12-01")
-    private LocalDate fecha;
+    private LocalDateTime fecha;
     @Schema(description = "Estado de la asistencia", example = "Presente | Ausente")
     private String estado;
     @Schema(description = "Horas cubiertas en este día", example = "4")
@@ -39,11 +41,11 @@ public class Asistencia {
         this.monitor = monitor;
     }
 
-    public LocalDate getFecha() {
+    public LocalDateTime getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDate fecha) {
+    public void setFecha(LocalDateTime fecha) {
         this.fecha = fecha;
     }
 
