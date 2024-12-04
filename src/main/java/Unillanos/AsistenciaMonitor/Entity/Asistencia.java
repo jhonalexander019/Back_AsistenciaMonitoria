@@ -15,14 +15,14 @@ public class Asistencia {
     private Long id;
 
     @ManyToOne
-    @Schema(description = "Monitor relacionado con esta asistencia")
+    @Schema(description = "Monitor asociado a la asistencia")
     private Monitor monitor;
 
     @Schema(description = "Fecha de la asistencia", example = "2024-12-01")
     private LocalDateTime fecha;
     @Schema(description = "Estado de la asistencia", example = "Presente | Ausente")
     private String estado;
-    @Schema(description = "Horas cubiertas en este día", example = "4")
+    @Schema(description = "Horas trabajadas en esta asistencia", example = "4")
     private Integer horasCubiertas;
 
     public Long getId() {

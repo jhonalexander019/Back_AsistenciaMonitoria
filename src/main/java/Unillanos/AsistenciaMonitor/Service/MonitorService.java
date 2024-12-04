@@ -3,14 +3,15 @@ package Unillanos.AsistenciaMonitor.Service;
 import Unillanos.AsistenciaMonitor.Entity.Monitor;
 import Unillanos.AsistenciaMonitor.Entity.Semestre;
 import Unillanos.AsistenciaMonitor.Entity.Usuario;
+import Unillanos.AsistenciaMonitor.Entity.Asistencia;
+
 import Unillanos.AsistenciaMonitor.Entity.Rol;
-import Unillanos.AsistenciaMonitor.Repository.MonitorRepository;
-import Unillanos.AsistenciaMonitor.Repository.SemestreRepository;
-import Unillanos.AsistenciaMonitor.Repository.UsuarioRepository;
-import Unillanos.AsistenciaMonitor.Repository.RolRepository;
+import Unillanos.AsistenciaMonitor.Repository.*;
 
 import java.util.HashMap;
 import java.util.Random;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.time.LocalDateTime;
@@ -25,6 +26,9 @@ public class MonitorService {
     private final UsuarioRepository usuarioRepository;
     private final SemestreRepository semestreRepository;
 
+    @Autowired
+    private AsistenciaRepository asistenciaRepository;
+
     public MonitorService(MonitorRepository monitorRepository, RolRepository rolRepository,
                           UsuarioRepository usuarioRepository, SemestreRepository semestreRepository) {
         this.monitorRepository = monitorRepository;
@@ -36,6 +40,12 @@ public class MonitorService {
     // Crear monitor
     public Monitor crearMonitor(String nombre, String apellido, String diasAsignados, Integer totalHoras,
                                 String correo, String genero, Long semestreId) {
+
+        // Verificar si ya existe un monitor con el correo
+        boolean existeMonitor = monitorRepository.existsByUsuario_CorreoAndSemestre_Id(correo, semestreId);
+        if (existeMonitor) {
+            throw new RuntimeException("Ya existe un monitor con el mismo correo en este semestre.");
+        }
 
         // Obtener el rol de "Monitor"
         Rol rolMonitor = rolRepository.findByNombre("Monitor")
@@ -144,6 +154,26 @@ public class MonitorService {
 
         return perfil;
     }
+    public List<Map<String, Object>> obtenerHorasCubiertas() {
+        List<Monitor> monitores = monitorRepository.findAll();
+
+        return monitores.stream().map(monitor -> {
+            int horasCubiertas = asistenciaRepository
+                    .findByMonitorIdAndEstado(monitor.getId(), "Presente")
+                    .stream()
+                    .mapToInt(Asistencia::getHorasCubiertas)
+                    .sum();
+
+            Map<String, Object> resultado = new HashMap<>();
+            resultado.put("id", monitor.getId());
+            resultado.put("nombre", monitor.getUsuario().getNombre());
+            resultado.put("apellido", monitor.getUsuario().getApellido());
+            resultado.put("horasCubiertas", horasCubiertas);
+            resultado.put("totalHoras", monitor.getTotalHoras());
+            return resultado;
+        }).collect(Collectors.toList());
+    }
+
 
 
 }

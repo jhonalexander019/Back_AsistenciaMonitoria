@@ -2,10 +2,12 @@ package Unillanos.AsistenciaMonitor.Controller;
 
 import Unillanos.AsistenciaMonitor.Entity.Monitor;
 import Unillanos.AsistenciaMonitor.Service.MonitorService;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,31 +38,29 @@ public class MonitorController {
                     )
             )
     )
-    public ResponseEntity<Monitor> crearMonitor(@RequestBody Map<String, Object> payload) {
-        Monitor monitor = monitorService.crearMonitor(
-                (String) payload.get("nombre"),
-                (String) payload.get("apellido"),
-                (String) payload.get("dias_asignados"),
-                (Integer) payload.get("total_horas"),
-                (String) payload.get("correo"),
-                (String) payload.get("genero"),
-                Long.valueOf((Integer) payload.get("semestre"))
-        );
-        return ResponseEntity.ok(monitor);
+    public ResponseEntity<?> crearMonitor(@RequestBody Map<String, Object> payload) {
+        try {
+            Monitor monitor = monitorService.crearMonitor(
+                    (String) payload.get("nombre"),
+                    (String) payload.get("apellido"),
+                    (String) payload.get("dias_asignados"),
+                    (Integer) payload.get("total_horas"),
+                    (String) payload.get("correo"),
+                    (String) payload.get("genero"),
+                    Long.valueOf((Integer) payload.get("semestre"))
+            );
+            return ResponseEntity.ok(monitor);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
+
 
     @DeleteMapping("/eliminar/{id}")
     @Operation(summary = "Eliminar un monitor", description = "Permite eliminar un monitor por su ID.")
     public ResponseEntity<Void> eliminarMonitor(@PathVariable Long id) {
         monitorService.eliminarMonitor(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/listar")
-    @Operation(summary = "Listar todos los monitores", description = "Obtiene una lista de todos los monitores registrados.")
-    public ResponseEntity<List<Monitor>> listarMonitores() {
-        List<Monitor> monitores = monitorService.listarMonitores();
-        return ResponseEntity.ok(monitores);
     }
 
     @GetMapping("/listarPorDia")
@@ -160,6 +160,42 @@ public class MonitorController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @GetMapping("/horasCubiertas")
+    @Operation(
+            summary = "Obtener horas cubiertas por monitor",
+            description = "Devuelve el nombre, apellido y la suma de las horas cubiertas cuando el estado es 'Presente', además del total de horas asignadas."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Listado de monitores con horas cubiertas",
+            content = @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(
+                            example = "[\n" +
+                                    "  {\n" +
+                                    "    \"id\": 1,\n" +
+                                    "    \"nombre\": \"Jhon\",\n" +
+                                    "    \"apellido\": \"Roa\",\n" +
+                                    "    \"horasCubiertas\": 8,\n" +
+                                    "    \"totalHoras\": 150\n" +
+                                    "  },\n" +
+                                    "  {\n" +
+                                    "    \"id\": 2,\n" +
+                                    "    \"nombre\": \"Monik\",\n" +
+                                    "    \"apellido\": \"Gomex\",\n" +
+                                    "    \"horasCubiertas\": 12,\n" +
+                                    "    \"totalHoras\": 180\n" +
+                                    "  }\n" +
+                                    "]"
+                    ))
+            )
+    )
+    public ResponseEntity<List<Map<String, Object>>> obtenerHorasCubiertasPorMonitor() {
+        List<Map<String, Object>> horasCubiertas = monitorService.obtenerHorasCubiertas();
+        return ResponseEntity.ok(horasCubiertas);
+    }
+
 
 
 }
