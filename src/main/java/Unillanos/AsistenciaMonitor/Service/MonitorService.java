@@ -8,6 +8,7 @@ import Unillanos.AsistenciaMonitor.Entity.Asistencia;
 import Unillanos.AsistenciaMonitor.Entity.Rol;
 import Unillanos.AsistenciaMonitor.Repository.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -79,6 +80,7 @@ public class MonitorService {
         return monitorRepository.save(monitor);
     }
 
+    // Genera el codigo de acceso
     private Integer generarCodigoUnico() {
         Random random = new Random();
         Integer codigo;
@@ -92,18 +94,35 @@ public class MonitorService {
         return codigo;
     }
 
-    // Listar todos los monitores
-    public List<Monitor> listarMonitores() {
-        return monitorRepository.findAll();
+    // Listar monitores por semestre vigente
+    public List<Map<String, Object>> listarMonitoresPorSemestre() {
+        LocalDate fechaActual = LocalDate.now(); // Obtener la fecha actual
+
+        // Buscar el semestre vigente
+        Semestre semestreVigente = semestreRepository.findAll().stream()
+                .filter(semestre ->
+                        !fechaActual.isBefore(semestre.getFechaInicio()) && !fechaActual.isAfter(semestre.getFechaFin())
+                )
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No hay un semestre vigente en la fecha actual."));
+
+        // Obtener los monitores del semestre vigente
+        List<Monitor> monitores = monitorRepository.findBySemestreId(semestreVigente.getId());
+
+        // Mapear los monitores a una estructura de datos adecuada
+        return monitores.stream()
+                .map(monitor -> {
+                    Map<String, Object> monitorMap = new HashMap<>();
+                    monitorMap.put("id", monitor.getId());
+                    monitorMap.put("nombre", monitor.getUsuario().getNombre());
+                    monitorMap.put("apellido", monitor.getUsuario().getApellido());
+                    monitorMap.put("codigo", monitor.getUsuario().getCodigo());
+                    monitorMap.put("genero", monitor.getUsuario().getGenero());
+                    monitorMap.put("semestre", monitor.getSemestre().getNombre());
+                    return monitorMap;
+                }).collect(Collectors.toList());
     }
 
-    // Eliminar un monitor por su ID
-    public void eliminarMonitor(Long id) {
-        Monitor monitor = monitorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Monitor no encontrado"));
-
-        monitorRepository.delete(monitor);
-    }
 
     // Listar monitores por un día específico en su horario
     public Map<String, List<Map<String, String>>> listarMonitoresPorHorario(String dia) {
@@ -111,7 +130,16 @@ public class MonitorService {
             throw new IllegalArgumentException("El día proporcionado no es válido.");
         }
 
-        List<Monitor> monitores = monitorRepository.findByDiasAsignadosContaining(dia);
+        LocalDate fechaActual = LocalDate.now(); // Obtener la fecha actual
+
+        // Filtrar monitores que tengan semestres vigentes y asignaciones para el día dado
+        List<Monitor> monitores = monitorRepository.findByDiasAsignadosContaining(dia).stream()
+                .filter(m -> {
+                    Semestre semestre = m.getSemestre();
+                    // Validar si el semestre está vigente
+                    return !fechaActual.isBefore(semestre.getFechaInicio()) && !fechaActual.isAfter(semestre.getFechaFin());
+                })
+                .collect(Collectors.toList());
 
         if (monitores.isEmpty()) {
             throw new RuntimeException("No hay monitores asignados para el día: " + dia);
@@ -136,6 +164,7 @@ public class MonitorService {
         return resultado;
     }
 
+
     // Perfil del monitor
     public Map<String, Object> obtenerPerfilMonitor(Long id) {
         Monitor monitor = monitorRepository.findById(id)
@@ -154,26 +183,66 @@ public class MonitorService {
 
         return perfil;
     }
+
+    // Control de horas
     public List<Map<String, Object>> obtenerHorasCubiertas() {
+        LocalDate fechaActual = LocalDate.now(); // Obtener la fecha actual
+
         List<Monitor> monitores = monitorRepository.findAll();
 
-        return monitores.stream().map(monitor -> {
-            int horasCubiertas = asistenciaRepository
-                    .findByMonitorIdAndEstado(monitor.getId(), "Presente")
-                    .stream()
-                    .mapToInt(Asistencia::getHorasCubiertas)
-                    .sum();
+        return monitores.stream()
+                .filter(monitor -> {
+                    Semestre semestre = monitor.getSemestre();
+                    // Validar si el semestre está vigente
+                    return !fechaActual.isBefore(semestre.getFechaInicio()) && !fechaActual.isAfter(semestre.getFechaFin());
+                })
+                .map(monitor -> {
+                    // Cambiar a mapToDouble para manejar valores double
+                    double horasCubiertas = asistenciaRepository
+                            .findByMonitorIdAndEstado(monitor.getId(), "Presente")
+                            .stream()
+                            .mapToDouble(Asistencia::getHorasCubiertas) // Cambiado a mapToDouble
+                            .sum(); // Utiliza sum() para double
 
-            Map<String, Object> resultado = new HashMap<>();
-            resultado.put("id", monitor.getId());
-            resultado.put("nombre", monitor.getUsuario().getNombre());
-            resultado.put("apellido", monitor.getUsuario().getApellido());
-            resultado.put("horasCubiertas", horasCubiertas);
-            resultado.put("totalHoras", monitor.getTotalHoras());
-            return resultado;
-        }).collect(Collectors.toList());
+                    // Crear el mapa de resultados
+                    Map<String, Object> resultado = new HashMap<>();
+                    resultado.put("id", monitor.getId());
+                    resultado.put("nombre", monitor.getUsuario().getNombre());
+                    resultado.put("apellido", monitor.getUsuario().getApellido());
+                    resultado.put("genero", monitor.getUsuario().getGenero());
+                    resultado.put("horasCubiertas", horasCubiertas);
+                    resultado.put("totalHoras", monitor.getTotalHoras());
+                    return resultado;
+                }).collect(Collectors.toList());
     }
 
 
+    public void actualizarPerfil(Long monitorId, Map<String, Object> payload) {
+        // Buscar el monitor por ID
+        Monitor monitor = monitorRepository.findById(monitorId)
+                .orElseThrow(() -> new RuntimeException("Monitor no encontrado"));
+
+        // Actualizar los datos del monitor y usuario
+        Usuario usuario = monitor.getUsuario();
+        if (payload.containsKey("nombre")) {
+            usuario.setNombre((String) payload.get("nombre"));
+        }
+        if (payload.containsKey("apellido")) {
+            usuario.setApellido((String) payload.get("apellido"));
+        }
+        if (payload.containsKey("correo")) {
+            usuario.setCorreo((String) payload.get("correo"));
+        }
+        if (payload.containsKey("genero")) {
+            usuario.setGenero((String) payload.get("genero"));
+        }
+        if (payload.containsKey("totalHoras")) {
+            monitor.setTotalHoras((Integer) payload.get("totalHoras"));
+        }
+
+        // Guardar cambios
+        usuarioRepository.save(usuario);
+        monitorRepository.save(monitor);
+    }
 
 }

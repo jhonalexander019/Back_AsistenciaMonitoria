@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface MonitorRepository extends JpaRepository<Monitor, Long> {
     boolean existsByUsuario_CorreoAndSemestre_Id(String correo, Long semestreId);
     List<Monitor> findByDiasAsignadosContaining(String dia);
+    List<Monitor> findBySemestreId(Long semestreId);
 
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -55,13 +56,30 @@ public class MonitorController {
         }
     }
 
-
-    @DeleteMapping("/eliminar/{id}")
-    @Operation(summary = "Eliminar un monitor", description = "Permite eliminar un monitor por su ID.")
-    public ResponseEntity<Void> eliminarMonitor(@PathVariable Long id) {
-        monitorService.eliminarMonitor(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/listarSemestre")
+    @Operation(
+            summary = "Listar monitores por semestre vigente",
+            description = "Lista todos los monitores asignados al semestre vigente según la fecha actual.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Lista de monitores obtenida con éxito"),
+                    @ApiResponse(responseCode = "404", description = "No hay un semestre vigente"),
+                    @ApiResponse(responseCode = "400", description = "Error en la solicitud")
+            }
+    )
+    public ResponseEntity<List<Map<String, Object>>> listarMonitoresPorSemestre() {
+        try {
+            List<Map<String, Object>> monitores = monitorService.listarMonitoresPorSemestre();
+            if (monitores.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+            }
+            return ResponseEntity.ok(monitores);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+        }
     }
+
 
     @GetMapping("/listarPorDia")
     @Operation(
@@ -177,6 +195,7 @@ public class MonitorController {
                                     "    \"id\": 1,\n" +
                                     "    \"nombre\": \"Jhon\",\n" +
                                     "    \"apellido\": \"Roa\",\n" +
+                                    "    \"genero\": \"Masculino\",\n" +
                                     "    \"horasCubiertas\": 8,\n" +
                                     "    \"totalHoras\": 150\n" +
                                     "  },\n" +
@@ -184,6 +203,7 @@ public class MonitorController {
                                     "    \"id\": 2,\n" +
                                     "    \"nombre\": \"Monik\",\n" +
                                     "    \"apellido\": \"Gomex\",\n" +
+                                    "    \"genero\": \"Femenino\",\n" +
                                     "    \"horasCubiertas\": 12,\n" +
                                     "    \"totalHoras\": 180\n" +
                                     "  }\n" +
@@ -196,6 +216,28 @@ public class MonitorController {
         return ResponseEntity.ok(horasCubiertas);
     }
 
+    @PutMapping("/actualizarPerfil/{monitorId}")
+    @Operation(
+            summary = "Actualizar perfil del monitor",
+            description = "Permite que un monitor actualice sus datos personales.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Datos actualizados correctamente"),
+                    @ApiResponse(responseCode = "404", description = "Monitor no encontrado"),
+                    @ApiResponse(responseCode = "400", description = "Error en la solicitud")
+            }
+    )
+    public ResponseEntity<String> actualizarPerfil(
+            @PathVariable Long monitorId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            monitorService.actualizarPerfil(monitorId, payload);
+            return ResponseEntity.ok("Perfil actualizado correctamente");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al actualizar el perfil");
+        }
+    }
 
 
 }

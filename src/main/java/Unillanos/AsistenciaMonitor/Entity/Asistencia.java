@@ -23,7 +23,17 @@ public class Asistencia {
     @Schema(description = "Estado de la asistencia", example = "Presente | Ausente")
     private String estado;
     @Schema(description = "Horas trabajadas en esta asistencia", example = "4")
-    private Integer horasCubiertas;
+    private Double horasCubiertas;
+    @Schema(description = "Jornada del turno", example = "Mañana | Tarde")
+    private String jornada;
+
+    public String getJornada() {
+        return jornada;
+    }
+
+    public void setJornada(String jornada) {
+        this.jornada = jornada;
+    }
 
     public Long getId() {
         return id;
@@ -57,11 +67,11 @@ public class Asistencia {
         this.estado = estado;
     }
 
-    public Integer getHorasCubiertas() {
+    public Double getHorasCubiertas() {
         return horasCubiertas;
     }
 
-    public void setHorasCubiertas(Integer horasCubiertas) {
+    public void setHorasCubiertas(Double horasCubiertas) {
         this.horasCubiertas = horasCubiertas;
     }
 }

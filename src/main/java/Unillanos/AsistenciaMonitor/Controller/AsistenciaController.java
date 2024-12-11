@@ -25,14 +25,27 @@ public class AsistenciaController {
     private AsistenciaService asistenciaService;
 
     @PostMapping("/registrar")
-    public ResponseEntity<Asistencia> registrarAsistencia(@RequestBody Map<String, Object> payload) {
-        Asistencia asistencia = asistenciaService.registrarAsistencia(
-                Long.valueOf((Integer) payload.get("monitor_id")),
-                (String) payload.get("estado"),
-                (Integer) payload.get("horas_trabajadas")
-        );
-        return ResponseEntity.ok(asistencia);
+    @Operation(
+            summary = "Registrar asistencia de un monitor",
+            description = "Registra la asistencia de un monitor con el estado predeterminado 'Presente', calculando automáticamente las horas según el turno (mañana o tarde).",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "ID del monitor para registrar asistencia"
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Asistencia registrada exitosamente"),
+                    @ApiResponse(responseCode = "400", description = "Error al registrar asistencia")
+            }
+    )
+    public ResponseEntity<Asistencia> registrarAsistencia(@RequestParam Long monitorId) {
+        try {
+            Asistencia asistencia = asistenciaService.registrarAsistencia(monitorId);
+            return ResponseEntity.ok(asistencia);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null); // O manejar el error con un mensaje más detallado
+        }
     }
+
+
 
     @GetMapping("/filtrar")
     @Operation(
