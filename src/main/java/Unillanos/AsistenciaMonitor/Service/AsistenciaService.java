@@ -1,9 +1,14 @@
 package Unillanos.AsistenciaMonitor.Service;
 
+import Unillanos.AsistenciaMonitor.DTO.Asistencia.ResponseCreateAsistenciaDTO;
 import Unillanos.AsistenciaMonitor.Entity.Asistencia;
 import Unillanos.AsistenciaMonitor.Entity.Monitor;
+import Unillanos.AsistenciaMonitor.Entity.Semestre;
+import Unillanos.AsistenciaMonitor.Mapper.AsistenciaMapper;
 import Unillanos.AsistenciaMonitor.Repository.AsistenciaRepository;
 import Unillanos.AsistenciaMonitor.Repository.MonitorRepository;
+import Unillanos.AsistenciaMonitor.Utils.ErrorMessages;
+import Unillanos.AsistenciaMonitor.Utils.GetData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,51 +16,61 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.Map;
 
 
 @Service
-public class AsistenciaService {
+public class
+
+
+AsistenciaService {
     @Autowired
     private AsistenciaRepository asistenciaRepository;
-
     @Autowired
     private MonitorRepository monitorRepository;
+    @Autowired
+    private AsistenciaMapper asistenciaMapper;
+    @Autowired
+    private GetData getData;
 
-    public Asistencia registrarAsistencia(Long monitorId) {
+    public ResponseCreateAsistenciaDTO registrarAsistencia(Long monitorId, String state) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalTime horaActual = LocalTime.now();
+
         // Buscar al monitor
         Monitor monitor = monitorRepository.findById(monitorId)
-                .orElseThrow(() -> new RuntimeException("Monitor no encontrado"));
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.MONITOR_NOT_FOUND));
 
         // Obtener la hora actual
-        LocalTime horaActual = LocalTime.now();
         Double horasTrabajadas;
         String turno;
 
         // Determinar el turno
-        if (horaActual.isAfter(LocalTime.of(7, 59)) && horaActual.isBefore(LocalTime.of(12, 1))) {
+        if (horaActual.isAfter(LocalTime.of(7, 59)) && horaActual.isBefore(LocalTime.of(12, 5))) {
             turno = "Mañana";
             horasTrabajadas = 4.0; // Horas asignadas en la mañana
-        } else if (horaActual.isAfter(LocalTime.of(13, 59)) && horaActual.isBefore(LocalTime.of(17, 31))) {
+        } else if (horaActual.isAfter(LocalTime.of(13, 59)) && horaActual.isBefore(LocalTime.of(17, 35))) {
             turno = "Tarde";
             horasTrabajadas = 3.5; // Horas asignadas en la tarde
         } else {
-            throw new IllegalArgumentException("La hora actual no corresponde a un turno válido.");
+            throw new IllegalArgumentException(ErrorMessages.INVALID_REGISTER_ATTENDANCE);
         }
 
-        // Crear el registro de asistencia
-        Asistencia asistencia = new Asistencia();
-        asistencia.setMonitor(monitor);
-        asistencia.setFecha(LocalDateTime.now());
-        asistencia.setEstado("Presente");
-        asistencia.setHorasCubiertas(horasTrabajadas);
-        asistencia.setJornada(turno);
+        boolean existeAsistencia = getData.validarAsistencia(monitor, now.toLocalDate().atStartOfDay(), now.plusDays(1).toLocalDate().atStartOfDay(), turno);
+        if (!existeAsistencia) {
 
-        return asistenciaRepository.save(asistencia);
+            // Crear el registro de asistencia
+            Asistencia asistencia = new Asistencia();
+            asistencia.setMonitor(monitor);
+            asistencia.setFecha(LocalDateTime.now());
+            asistencia.setEstado(state);
+            asistencia.setHorasCubiertas(horasTrabajadas);
+            asistencia.setJornada(turno);
+
+            return asistenciaMapper.toDTO(asistenciaRepository.save(asistencia));
+        }
+        throw new IllegalArgumentException(ErrorMessages.REPEATED_ATTENDANCE);
     }
 
     //Control de horas
@@ -75,6 +90,26 @@ public class AsistenciaService {
                     asistenciaMap.put("horasCubiertas", asistencia.getHorasCubiertas());
                     return asistenciaMap;
                 }).collect(Collectors.toList());
+    }
+
+    public Double obtenerHorasAusente(Long id) {
+        Monitor monitorVigente = getData.obtenerMonitorPorId(id);
+        Map<String, Double> asistenciaHoras = asistenciaRepository.findByMonitorId(id).stream()
+                .filter(asistencia -> asistencia.getMonitor().getSemestre().equals(monitorVigente.getSemestre()))
+                .collect(Collectors.groupingBy(
+                        Asistencia::getEstado, // Agrupa por estado ("Ausente", "Presente")
+                        Collectors.summingDouble(Asistencia::getHorasCubiertas) // Suma las horas por estado
+                ));
+
+        double ausentes = asistenciaHoras.getOrDefault("Ausente", 0.0);
+        double recuperadas = asistenciaHoras.getOrDefault("Recuperado", 0.0);
+
+
+        if ((ausentes - recuperadas) != 0) {
+            return ausentes - recuperadas;
+        } else {
+            throw new RuntimeException(ErrorMessages.ATTENDANCE_NOT_FOUND);
+        }
     }
 
     public void registrarAsistenciasAutomaticas(String turno) {
@@ -104,12 +139,7 @@ public class AsistenciaService {
 
         for (Monitor monitor : monitores) {
             // Validar si ya existe un registro de asistencia para el monitor en este día y jornada
-            boolean existeAsistencia = asistenciaRepository.existsByMonitorAndFechaBetweenAndJornada(
-                    monitor,
-                    now.toLocalDate().atStartOfDay(),
-                    now.plusDays(1).toLocalDate().atStartOfDay(),
-                    turno // Jornada (Mañana o Tarde)
-            );
+            boolean existeAsistencia = getData.validarAsistencia(monitor, now.toLocalDate().atStartOfDay(), now.plusDays(1).toLocalDate().atStartOfDay(), turno);
 
             if (!existeAsistencia) {
                 System.out.println("Registrando asistencia automática para el turno: " + turno);
@@ -140,7 +170,6 @@ public class AsistenciaService {
             default -> null;
         };
     }
-
 
 
 }

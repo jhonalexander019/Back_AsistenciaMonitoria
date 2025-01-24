@@ -1,5 +1,6 @@
 package Unillanos.AsistenciaMonitor.Controller;
 
+import Unillanos.AsistenciaMonitor.DTO.Usuario.ResponseSessionUsuarioDTO;
 import Unillanos.AsistenciaMonitor.Service.SesionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,12 +40,12 @@ public class SesionController {
                     )
             ),
     })
-    public ResponseEntity<Map<String, Object>> iniciarSesion(@RequestParam Integer codigo) {
+    public ResponseEntity<?> iniciarSesion(@RequestParam Integer codigo) {
         try {
-            Map<String, Object> usuarioInfo = sesionService.iniciarSesion(codigo);
+            ResponseSessionUsuarioDTO usuarioInfo = sesionService.iniciarSesion(codigo);
             return ResponseEntity.ok(usuarioInfo);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

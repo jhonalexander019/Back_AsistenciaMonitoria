@@ -1,20 +1,14 @@
 package Unillanos.AsistenciaMonitor.Controller;
 
-import Unillanos.AsistenciaMonitor.Entity.Asistencia;
+import Unillanos.AsistenciaMonitor.DTO.Asistencia.ResponseCreateAsistenciaDTO;
 import Unillanos.AsistenciaMonitor.Service.AsistenciaService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
-import java.util.Map;
-import java.util.List;
 
 
 @RestController
@@ -24,7 +18,7 @@ public class AsistenciaController {
     @Autowired
     private AsistenciaService asistenciaService;
 
-    @PostMapping("/registrar")
+    @PostMapping("/registrar/{monitorId}")
     @Operation(
             summary = "Registrar asistencia de un monitor",
             description = "Registra la asistencia de un monitor con el estado predeterminado 'Presente', calculando automáticamente las horas según el turno (mañana o tarde).",
@@ -36,55 +30,23 @@ public class AsistenciaController {
                     @ApiResponse(responseCode = "400", description = "Error al registrar asistencia")
             }
     )
-    public ResponseEntity<Asistencia> registrarAsistencia(@RequestParam Long monitorId) {
+    public ResponseEntity<?> registrarAsistencia(@PathVariable Long monitorId,
+                                                 @RequestParam String state) {
         try {
-            Asistencia asistencia = asistenciaService.registrarAsistencia(monitorId);
+            ResponseCreateAsistenciaDTO asistencia = asistenciaService.registrarAsistencia(monitorId, state);
             return ResponseEntity.ok(asistencia);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(null); // O manejar el error con un mensaje más detallado
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
+    @GetMapping("/horasAusente/{monitorId}")
 
-
-    @GetMapping("/filtrar")
-    @Operation(
-            summary = "Filtrar asistencias",
-            description = "Lista las asistencias de monitores filtradas por monitor, estado y semestre.",
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Listado de asistencias filtradas",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    array = @ArraySchema(schema = @Schema(
-                                            example = "[\n" +
-                                                    "  {\n" +
-                                                    "    \"id\": 1,\n" +
-                                                    "    \"nombreMonitor\": \"Jhon\",\n" +
-                                                    "    \"apellidoMonitor\": \"Roa\",\n" +
-                                                    "    \"semestre\": \"2024-1\",\n" +
-                                                    "    \"horasCubiertas\": 4\n" +
-                                                    "  },\n" +
-                                                    "  {\n" +
-                                                    "    \"id\": 3,\n" +
-                                                    "    \"nombreMonitor\": \"Jhon\",\n" +
-                                                    "    \"apellidoMonitor\": \"Roa\",\n" +
-                                                    "    \"semestre\": \"2024-1\",\n" +
-                                                    "    \"horasCubiertas\": 4\n" +
-                                                    "  }\n" +
-                                                    "]"
-                                    ))
-                            )
-                    ),
-            }
-    )
-    public ResponseEntity<List<Map<String, Object>>> listarAsistenciasFiltradas(
-            @RequestParam Long monitorId,
-            @RequestParam String estado,
-            @RequestParam String semestre) {
-        List<Map<String, Object>> asistencias = asistenciaService.listarAsistenciasPorEstadoYSemestre(monitorId, estado, semestre);
-        return ResponseEntity.ok(asistencias);
+    public ResponseEntity<?> obtenerHorasAusentes(@PathVariable Long monitorId){
+        try {
+            return ResponseEntity.ok(asistenciaService.obtenerHorasAusente(monitorId));
+        } catch (RuntimeException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
-
 }

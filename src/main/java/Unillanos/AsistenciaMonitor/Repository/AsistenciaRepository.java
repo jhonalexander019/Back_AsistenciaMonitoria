@@ -16,4 +16,8 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
             Monitor monitor, LocalDateTime start, LocalDateTime end, String jornada
     );
 
+    List<Asistencia> findByMonitorId(Long monitorId);
+
+
+
 }

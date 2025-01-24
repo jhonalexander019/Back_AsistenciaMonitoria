@@ -1,11 +1,13 @@
 package Unillanos.AsistenciaMonitor.Controller;
 
-import Unillanos.AsistenciaMonitor.Entity.Monitor;
+import Unillanos.AsistenciaMonitor.DTO.Monitor.*;
 import Unillanos.AsistenciaMonitor.Service.MonitorService;
+import Unillanos.AsistenciaMonitor.Utils.ErrorMessages;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -39,17 +40,9 @@ public class MonitorController {
                     )
             )
     )
-    public ResponseEntity<?> crearMonitor(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> crearMonitor(@Valid @RequestBody RequestDTO monitorDTO) {
         try {
-            Monitor monitor = monitorService.crearMonitor(
-                    (String) payload.get("nombre"),
-                    (String) payload.get("apellido"),
-                    (String) payload.get("dias_asignados"),
-                    (Integer) payload.get("total_horas"),
-                    (String) payload.get("correo"),
-                    (String) payload.get("genero"),
-                    Long.valueOf((Integer) payload.get("semestre"))
-            );
+            ResponseMonitorDTO monitor = monitorService.crearMonitor(monitorDTO);
             return ResponseEntity.ok(monitor);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -66,17 +59,17 @@ public class MonitorController {
                     @ApiResponse(responseCode = "400", description = "Error en la solicitud")
             }
     )
-    public ResponseEntity<List<Map<String, Object>>> listarMonitoresPorSemestre() {
+    public ResponseEntity<?> listarMonitoresPorSemestre() {
         try {
-            List<Map<String, Object>> monitores = monitorService.listarMonitoresPorSemestre();
+            List<ResponseCreateMonitorDTO> monitores = monitorService.listarMonitoresPorSemestre();
             if (monitores.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorMessages.MONITORS_NOT_FOUND_PER_SEMESTER);
             }
             return ResponseEntity.ok(monitores);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorMessages.INVALID_REQUEST);
         }
     }
 
@@ -129,9 +122,9 @@ public class MonitorController {
             Map<String, List<Map<String, String>>> monitoresPorHorario = monitorService.listarMonitoresPorHorario(dia);
             return ResponseEntity.ok(monitoresPorHorario);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ErrorMessages.INVALID_REQUEST);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
@@ -170,12 +163,12 @@ public class MonitorController {
                     )
             }
     )
-    public ResponseEntity<Map<String, Object>> obtenerPerfilMonitor(@RequestParam Long id) {
+    public ResponseEntity<?> obtenerPerfilMonitor(@RequestParam Long id) {
         try {
-            Map<String, Object> perfil = monitorService.obtenerPerfilMonitor(id);
+            ResponsePerfilMonitorDTO perfil = null;
             return ResponseEntity.ok(perfil);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -211,9 +204,14 @@ public class MonitorController {
                     ))
             )
     )
-    public ResponseEntity<List<Map<String, Object>>> obtenerHorasCubiertasPorMonitor() {
-        List<Map<String, Object>> horasCubiertas = monitorService.obtenerHorasCubiertas();
-        return ResponseEntity.ok(horasCubiertas);
+    public ResponseEntity<?> obtenerHorasCubiertasPorMonitor(
+            @RequestParam(required = false) Long semestreId) {
+        try {
+            List<ResponseHorasMonitorDTO> horasCubiertas = monitorService.obtenerHorasCubiertas(semestreId);
+            return ResponseEntity.ok(horasCubiertas);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PutMapping("/actualizarPerfil/{monitorId}")
@@ -221,23 +219,49 @@ public class MonitorController {
             summary = "Actualizar perfil del monitor",
             description = "Permite que un monitor actualice sus datos personales.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Datos actualizados correctamente"),
-                    @ApiResponse(responseCode = "404", description = "Monitor no encontrado"),
-                    @ApiResponse(responseCode = "400", description = "Error en la solicitud")
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Datos actualizados correctamente",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            examples = "{\n" +
+                                                    "  \"success\": \"Perfil actualizado correctamente\"\n" +
+                                                    "}")
+
+                            )),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Monitor no encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            example =
+                                                    "{\n" +
+                                                            "  \"error\": \"Monitor no encontrado\"\n" +
+                                                            "}"
+                                    ))),
+                    @ApiResponse(responseCode = "400",
+                            description = "Error en la solicitud",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(
+                                            example =
+                                                    "{\n" +
+                                                            "  \"error\": \"Error al actualizar el perfil. Verifique los datos enviados.\"\n" +
+                                                            "}"
+                                    )))
             }
     )
-    public ResponseEntity<String> actualizarPerfil(
+    public ResponseEntity<?> actualizarPerfil(
             @PathVariable Long monitorId,
-            @RequestBody Map<String, Object> payload) {
+            @RequestBody RequestDTO monitorDTO) {
         try {
-            monitorService.actualizarPerfil(monitorId, payload);
-            return ResponseEntity.ok("Perfil actualizado correctamente");
+            return ResponseEntity.ok(monitorService.actualizarPerfil(monitorId, monitorDTO));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error al actualizar el perfil");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorMessages.INVALID_UPDATE_PROFILE);
         }
     }
-
-
 }

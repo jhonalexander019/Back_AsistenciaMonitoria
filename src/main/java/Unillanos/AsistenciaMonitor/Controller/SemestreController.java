@@ -1,7 +1,9 @@
 package Unillanos.AsistenciaMonitor.Controller;
 
+import Unillanos.AsistenciaMonitor.DTO.Semestre.RequestCreateSemestreDTO;
 import Unillanos.AsistenciaMonitor.Entity.Semestre;
 import Unillanos.AsistenciaMonitor.Service.SemestreService;
+import Unillanos.AsistenciaMonitor.Utils.ErrorMessages;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,22 +23,25 @@ public class SemestreController {
     @Autowired
     private SemestreService semestreService;
 
-    // Endpoint para crear un semestre
     @PostMapping("/crear")
     @Operation(
             summary = "Crear semestres",
             description = "Permite crear un semestre con los datos especificados."
     )
-    public ResponseEntity<Semestre> crearSemestre(@RequestBody Map<String, Object> payload) {
-        Semestre semestre = semestreService.crearSemestre(
-                (String) payload.get("nombre"),
-                LocalDate.parse((String) payload.get("fecha_inicio_semestre")),
-                LocalDate.parse((String) payload.get("fecha_fin_semestre"))
-        );
-        return ResponseEntity.ok(semestre);
+    public ResponseEntity<?> crearSemestre(@RequestBody Map<String, Object> payload) {
+        try {
+            Semestre semestre = semestreService.crearSemestre(
+                    (String) payload.get("nombre"),
+                    LocalDate.parse((String) payload.get("fechaInicio")),
+                    LocalDate.parse((String) payload.get("fechaFin"))
+            );
+            return ResponseEntity.ok(semestre);
+        }catch (RuntimeException e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+
     }
 
-    // Endpoint para listar todos los semestres
     @GetMapping("/listar")
     @Operation(
             summary = "Listar semestres",
@@ -47,23 +52,20 @@ public class SemestreController {
         return ResponseEntity.ok(semestres);
     }
 
-    // Endpoint para eliminar un semestre por ID
     @DeleteMapping("/eliminar/{id}")
     @Operation(
             summary = "Eliminar semestre",
             description = "Elimina un semestre por su ID."
     )
-    public ResponseEntity<Void> eliminarSemestre(@PathVariable Long id) {
+    public ResponseEntity<?> eliminarSemestre(@PathVariable Long id) {
         try {
             semestreService.eliminarSemestre(id);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(ErrorMessages.DELETE_SUCCESS_SEMESTER);
         } catch (RuntimeException e) {
-            // No se encontró el semestre
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    // Endpoint para editar un semestre por ID
     @PutMapping("/editar/{id}")
     @Operation(
             summary = "Editar semestre",
@@ -103,17 +105,11 @@ public class SemestreController {
                     )
             }
     )
-    public ResponseEntity<?> editarSemestre(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> editarSemestre(@PathVariable Long id, @RequestBody RequestCreateSemestreDTO semestreDTO) {
         try {
-            Semestre semestreEditado = semestreService.editarSemestre(
-                    id,
-                    (String) payload.get("nombre"),
-                    LocalDate.parse((String) payload.get("fecha_inicio_semestre")),
-                    LocalDate.parse((String) payload.get("fecha_fin_semestre"))
-            );
-            return ResponseEntity.ok(semestreEditado);
+            return ResponseEntity.ok(semestreService.editarSemestre(id, semestreDTO));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body( e.getMessage());
         }
     }
 }

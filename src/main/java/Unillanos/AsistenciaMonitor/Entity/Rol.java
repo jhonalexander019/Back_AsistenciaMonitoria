@@ -2,8 +2,14 @@ package Unillanos.AsistenciaMonitor.Entity;
 
 import jakarta.persistence.*;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "Entidad que representa un rol dentro del sistema")
 public class Rol {
     @Id
@@ -14,29 +20,7 @@ public class Rol {
     @Schema(description = "Nombre del rol", example = "Monitor")
     private String nombre;
 
-    // Constructor sin argumentos
-    public Rol() {
-    }
-
-    // Constructor con argumento para inicializar nombre
     public Rol(String nombre) {
         this.nombre = nombre;
     }
-    // Getters y setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
 }

@@ -2,11 +2,13 @@ package Unillanos.AsistenciaMonitor.Entity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @Schema(description = "Entidad que representa la asistencia de un monitor en un día específico")
 public class Asistencia {
     @Id
@@ -27,51 +29,4 @@ public class Asistencia {
     @Schema(description = "Jornada del turno", example = "Mañana | Tarde")
     private String jornada;
 
-    public String getJornada() {
-        return jornada;
-    }
-
-    public void setJornada(String jornada) {
-        this.jornada = jornada;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Monitor getMonitor() {
-        return monitor;
-    }
-
-    public void setMonitor(Monitor monitor) {
-        this.monitor = monitor;
-    }
-
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
-
-    public String getEstado() {
-        return estado;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public Double getHorasCubiertas() {
-        return horasCubiertas;
-    }
-
-    public void setHorasCubiertas(Double horasCubiertas) {
-        this.horasCubiertas = horasCubiertas;
-    }
 }

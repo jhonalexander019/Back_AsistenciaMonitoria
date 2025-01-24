@@ -12,13 +12,13 @@ public class AsistenciaRegisterJob {
     @Autowired
     private AsistenciaService asistenciaService;
 
-    @Scheduled(cron = "0 5 13 * * MON-FRI") // Ejecuta todos los días hábiles a las 1:05 PM
+    @Scheduled(cron = "0 5 12 * * MON-FRI") // Ejecuta todos los días hábiles a las 1:05 PM
     public void registrarAsistenciasMañana() {
         System.out.println("Entró en la tarea de registrar asistencias de la mañana.");
         asistenciaService.registrarAsistenciasAutomaticas("Mañana");
     }
 
-    @Scheduled(cron = "0 5 18 * * MON-FRI") // Ejecuta todos los días hábiles a las 6:05 PM
+    @Scheduled(cron = "0 5 17 * * MON-FRI") // Ejecuta todos los días hábiles a las 5:05 PM
     public void registrarAsistenciasTarde() {
         System.out.println("Entró en la tarea de registrar asistencias de la tarde.");
         asistenciaService.registrarAsistenciasAutomaticas("Tarde");
