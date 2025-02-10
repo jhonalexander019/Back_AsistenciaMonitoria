@@ -1,9 +1,9 @@
 package Unillanos.AsistenciaMonitor;
 
-import Unillanos.AsistenciaMonitor.Entity.Rol;
-import Unillanos.AsistenciaMonitor.Entity.Usuario;
-import Unillanos.AsistenciaMonitor.Repository.RolRepository;
-import Unillanos.AsistenciaMonitor.Repository.UsuarioRepository;
+import Unillanos.AsistenciaMonitor.entity.Rol;
+import Unillanos.AsistenciaMonitor.entity.Usuario;
+import Unillanos.AsistenciaMonitor.repository.RolRepository;
+import Unillanos.AsistenciaMonitor.repository.UsuarioRepository;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
