@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/asistencias")
@@ -30,6 +32,17 @@ public class AsistenciaController extends BaseController {
         } catch (RuntimeException e) {
             return createErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    @PostMapping("/crear-manual")
+    public ResponseEntity<ResponseCreateAsistenciaDTO> crearAsistenciaManual(
+            @RequestParam Long monitorId,
+            @RequestParam String jornada,
+            @RequestParam Double horas,
+            @RequestParam String estado) {
+
+        ResponseCreateAsistenciaDTO asistencia = asistenciaService.crearAsistenciaManual(monitorId, jornada, horas, estado);
+        return ResponseEntity.ok(asistencia);
     }
 
     @GetMapping("/horasAusente/{monitorId}")
@@ -52,9 +65,13 @@ public class AsistenciaController extends BaseController {
         }
     }
     @PutMapping("/editar/{asistenciaId}")
-    @Operation(summary = "Editar asistencia de un monitor")
-    public ResponseEntity<?> editarAsistencia(@PathVariable Long asistenciaId, @RequestParam String state) {
-        return handleRequest(() -> asistenciaService.editarAsistencia(asistenciaId, state));
+    public ResponseEntity<ResponseCreateAsistenciaDTO> editarAsistencia(
+            @PathVariable Long asistenciaId,
+            @RequestParam Optional<Double> horas,
+            @RequestParam Optional<String> estado) {
+
+        ResponseCreateAsistenciaDTO asistencia = asistenciaService.editarAsistencia(asistenciaId, horas, estado);
+        return ResponseEntity.ok(asistencia);
     }
 
 }

@@ -81,6 +81,20 @@ AsistenciaService {
         throw new IllegalArgumentException(ErrorMessages.REPEATED_ATTENDANCE);
     }
 
+    public ResponseCreateAsistenciaDTO crearAsistenciaManual(Long monitorId, String jornada, Double horas, String estado) {
+        Monitor monitor = monitorRepository.findById(monitorId)
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.MONITOR_NOT_FOUND));
+
+        Asistencia asistencia = new Asistencia();
+        asistencia.setMonitor(monitor);
+        asistencia.setFecha(LocalDateTime.now());
+        asistencia.setJornada(jornada);
+        asistencia.setHorasCubiertas(horas);
+        asistencia.setEstado(estado);
+
+        return asistenciaMapper.toDTO(asistenciaRepository.save(asistencia));
+    }
+
     //Control de horas
     public List<Map<String, Object>> listarAsistenciasPorEstadoYSemestre(Long monitorId, String estado, String semestre) {
         // Filtrar asistencias según el monitor, estado y semestre
@@ -98,26 +112,6 @@ AsistenciaService {
                     asistenciaMap.put("horasCubiertas", asistencia.getHorasCubiertas());
                     return asistenciaMap;
                 }).collect(Collectors.toList());
-    }
-
-    public Double obtenerHorasAusente(Long id) {
-        Monitor monitorVigente = getData.obtenerMonitorPorId(id);
-        Map<String, Double> asistenciaHoras = asistenciaRepository.findByMonitorId(id).stream()
-                .filter(asistencia -> asistencia.getMonitor().getSemestre().equals(monitorVigente.getSemestre()))
-                .collect(Collectors.groupingBy(
-                        Asistencia::getEstado, // Agrupa por estado ("Ausente", "Presente")
-                        Collectors.summingDouble(Asistencia::getHorasCubiertas) // Suma las horas por estado
-                ));
-
-        double ausentes = asistenciaHoras.getOrDefault("Ausente", 0.0);
-        double recuperadas = asistenciaHoras.getOrDefault("Recuperado", 0.0);
-
-
-        if ((ausentes - recuperadas) != 0) {
-            return ausentes - recuperadas;
-        } else {
-            throw new RuntimeException(ErrorMessages.ATTENDANCE_NOT_FOUND);
-        }
     }
 
     public void registrarAsistenciasAutomaticas(String turno) {
@@ -155,8 +149,6 @@ AsistenciaService {
             boolean existeAsistencia = asistenciaHelper.validarAsistencia(monitor, now.toLocalDate().atStartOfDay(), now.plusDays(1).toLocalDate().atStartOfDay(), turno);
 
             if (!existeAsistencia) {
-                System.out.println("Registrando asistencia automática para el turno: " + turno);
-
                 // Crear y guardar el registro de asistencia
                 Asistencia asistencia = new Asistencia();
                 asistencia.setMonitor(monitor);
@@ -167,6 +159,26 @@ AsistenciaService {
 
                 asistenciaRepository.save(asistencia);
             }
+        }
+    }
+
+    public Double obtenerHorasAusente(Long id) {
+        Monitor monitorVigente = getData.obtenerMonitorPorId(id);
+        Map<String, Double> asistenciaHoras = asistenciaRepository.findByMonitorId(id).stream()
+                .filter(asistencia -> asistencia.getMonitor().getSemestre().equals(monitorVigente.getSemestre()))
+                .collect(Collectors.groupingBy(
+                        Asistencia::getEstado, // Agrupa por estado ("Ausente", "Presente")
+                        Collectors.summingDouble(Asistencia::getHorasCubiertas) // Suma las horas por estado
+                ));
+
+        double ausentes = asistenciaHoras.getOrDefault("Ausente", 0.0);
+        double recuperadas = asistenciaHoras.getOrDefault("Recuperado", 0.0);
+
+
+        if ((ausentes - recuperadas) != 0) {
+            return ausentes - recuperadas;
+        } else {
+            throw new RuntimeException(ErrorMessages.ATTENDANCE_NOT_FOUND);
         }
     }
 
@@ -199,11 +211,14 @@ AsistenciaService {
                 .map(asistenciaMapper::toAsistenciaDTO)
                 .collect(Collectors.toList());
     }
-    public ResponseCreateAsistenciaDTO editarAsistencia(Long asistenciaId, String state) {
+
+    public ResponseCreateAsistenciaDTO editarAsistencia(Long asistenciaId, Optional<Double> horas, Optional<String> estado) {
         Asistencia asistencia = asistenciaRepository.findById(asistenciaId)
                 .orElseThrow(() -> new RuntimeException(ErrorMessages.ATTENDANCE_RECORD_NOT_FOUND));
 
-        asistencia.setEstado(state);
+        horas.ifPresent(asistencia::setHorasCubiertas);
+        estado.ifPresent(asistencia::setEstado);
+
         return asistenciaMapper.toDTO(asistenciaRepository.save(asistencia));
     }
 
