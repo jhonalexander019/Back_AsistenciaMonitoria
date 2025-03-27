@@ -20,5 +20,6 @@ public class ErrorMessages {
     public static final String INVALID_REGISTER_ATTENDANCE = "Hora inválida para registrar asistencia.";
     public static final String ATTENDANCE_NOT_FOUND = "El monitor no tiene horas por recuperar.";
     public static final String REPEATED_ATTENDANCE = "Registro de asistencia inválido, ya se ha registrado en esta jornada.";
-    public static final String INTERNAL_SERVER_ERROR = "Error interno del servidor.";
+    public static final String ATTENDANCE_RECORD_NOT_FOUND = "No se encontró un registro de asistencia para este monitor.";
+
 }

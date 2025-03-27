@@ -42,17 +42,18 @@ public class AsistenciaMapper {
     public AsistenciaDTO toAsistenciaDTO(Asistencia entity) {
         if (entity == null) return null;
 
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         AsistenciaDTO dto = new AsistenciaDTO();
+        dto.setId(entity.getId()); // Agregar el ID de la asistencia
         dto.setFecha(entity.getFecha().format(formatter));
         dto.setNombre(entity.getMonitor().getUsuario().getNombre());
         dto.setApellido(entity.getMonitor().getUsuario().getApellido());
         dto.setJornada(entity.getJornada());
         dto.setEstado(entity.getEstado());
-        return dto;
 
+        return dto;
     }
+
 
 }

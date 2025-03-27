@@ -51,4 +51,10 @@ public class AsistenciaController extends BaseController {
             return createErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
+    @PutMapping("/editar/{asistenciaId}")
+    @Operation(summary = "Editar asistencia de un monitor")
+    public ResponseEntity<?> editarAsistencia(@PathVariable Long asistenciaId, @RequestParam String state) {
+        return handleRequest(() -> asistenciaService.editarAsistencia(asistenciaId, state));
+    }
+
 }

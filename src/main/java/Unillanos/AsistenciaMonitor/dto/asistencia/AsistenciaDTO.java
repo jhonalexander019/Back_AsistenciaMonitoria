@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AsistenciaDTO {
+    private Long id;
     private String fecha;
     private String nombre;
     private String apellido;

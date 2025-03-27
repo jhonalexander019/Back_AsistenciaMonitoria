@@ -58,9 +58,9 @@ AsistenciaService {
         if (horaActual.isAfter(LocalTime.of(7, 59)) && horaActual.isBefore(LocalTime.of(12, 5))) {
             turno = "Mañana";
             horasTrabajadas = 4.0; // Horas asignadas en la mañana
-        } else if (horaActual.isAfter(LocalTime.of(13, 59)) && horaActual.isBefore(LocalTime.of(17, 35))) {
+        } else if (horaActual.isAfter(LocalTime.of(13, 59)) && horaActual.isBefore(LocalTime.of(18, 5))) {
             turno = "Tarde";
-            horasTrabajadas = 3.5; // Horas asignadas en la tarde
+            horasTrabajadas = 4.0; // Horas asignadas en la tarde
         } else {
             throw new IllegalArgumentException(ErrorMessages.INVALID_REGISTER_ATTENDANCE);
         }
@@ -135,7 +135,7 @@ AsistenciaService {
         if (turno.equals("Mañana")) {
             horasCubiertas = 4.0; // Horas asignadas en la mañana
         } else if (turno.equals("Tarde")) {
-            horasCubiertas = 3.5; // Horas asignadas en la tarde
+            horasCubiertas = 4.0; // Horas asignadas en la tarde
         } else {
             // No es un turno válido
             return;
@@ -199,7 +199,12 @@ AsistenciaService {
                 .map(asistenciaMapper::toAsistenciaDTO)
                 .collect(Collectors.toList());
     }
+    public ResponseCreateAsistenciaDTO editarAsistencia(Long asistenciaId, String state) {
+        Asistencia asistencia = asistenciaRepository.findById(asistenciaId)
+                .orElseThrow(() -> new RuntimeException(ErrorMessages.ATTENDANCE_RECORD_NOT_FOUND));
 
-
+        asistencia.setEstado(state);
+        return asistenciaMapper.toDTO(asistenciaRepository.save(asistencia));
+    }
 
 }
