@@ -1,6 +1,5 @@
 package Unillanos.AsistenciaMonitor.service;
 
-import Unillanos.AsistenciaMonitor.dto.asistencia.AsistenciaDTO;
 import Unillanos.AsistenciaMonitor.dto.asistencia.ResponseCreateAsistenciaDTO;
 import Unillanos.AsistenciaMonitor.entity.Asistencia;
 import Unillanos.AsistenciaMonitor.entity.Monitor;
@@ -19,7 +18,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,7 +49,7 @@ AsistenciaService {
                 .orElseThrow(() -> new RuntimeException(ErrorMessages.MONITOR_NOT_FOUND));
 
         // Obtener la hora actual
-        Double horasTrabajadas;
+        double horasTrabajadas;
         String turno;
 
         // Determinar el turno
@@ -196,7 +194,7 @@ AsistenciaService {
         };
     }
 
-    public List<AsistenciaDTO> listarAsistenciasPorFechaYSemestre(Long semestreId) {
+    public List<ResponseCreateAsistenciaDTO> listarAsistenciasPorFechaYSemestre(Long semestreId) {
         Semestre semestre = (semestreId != null)
                 ? semestreRepository.findById(semestreId)
                 .orElseThrow(() -> new RuntimeException("Semestre no encontrado"))
@@ -205,10 +203,10 @@ AsistenciaService {
         List<Asistencia> asistencias = asistenciaRepository.findAll().stream()
                 .filter(asistencia -> asistencia.getMonitor().getSemestre().equals(semestre))
                 .sorted(Comparator.comparing(Asistencia::getFecha).reversed())
-                .collect(Collectors.toList());
+                .toList();
 
         return asistencias.stream()
-                .map(asistenciaMapper::toAsistenciaDTO)
+                .map(asistenciaMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
